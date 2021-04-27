@@ -1,51 +1,29 @@
-/*
- * Copyright 2016-2021 NXP
- * All rights reserved.
+/*******************************************************************************************************
+ * @file main.c :
+ * @brief   : Application Entry point for projct Goods-sense.
+ * 			  This project is developed to sense condition of goods while transporting. THe project
+ * 			  project include implementation on accelerometer and low power operation.
  *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
+ * @author  : Rajat Chaple (rajat.chaple@colorado.edu)
+ * @date    : Apr 25, 2021
  *
- * o Redistributions of source code must retain the above copyright notice, this list
- *   of conditions and the following disclaimer.
- *
- * o Redistributions in binary form must reproduce the above copyright notice, this
- *   list of conditions and the following disclaimer in the documentation and/or
- *   other materials provided with the distribution.
- *
- * o Neither the name of NXP Semiconductor, Inc. nor the names of its
- *   contributors may be used to endorse or promote products derived from this
- *   software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
- 
-/**
- * @file    PES-Project.c
- * @brief   Application entry point.
- */
+  *******************************************************************************************************/
+
+/*--------- Defines ---------*/
 #include <stdio.h>
+#include "log.h"
 #include "board.h"
 #include "peripherals.h"
 #include "pin_mux.h"
 #include "clock_config.h"
 #include "MKL25Z4.h"
 #include "fsl_debug_console.h"
-/* TODO: insert other include files here. */
-
-/* TODO: insert other definitions and declarations here. */
-
-/*
- * @brief   Application entry point.
- */
+#include "init.h"
+#include "accelerometer.h"
+#include "gpio.h"
+/*-------------------------------------------------------------------------------------------------------
+ * application entry point
+ ------------------------------------------------------------------------------------------------------*/
 int main(void) {
 
   	/* Init board hardware. */
@@ -57,16 +35,32 @@ int main(void) {
     BOARD_InitDebugConsole();
 #endif
 
-    PRINTF("Hello World\n");
+    LOG("Goods Sense device starting...\r\n");
 
-    /* Force the counter to be placed into memory. */
-    volatile static int i = 0 ;
-    /* Enter an infinite loop, just incrementing a counter. */
-    while(1) {
-        i++ ;
-        /* 'Dummy' NOP to allow source level single stepping of
-            tight while() loop */
-        __asm volatile ("nop");
+    init_system();
+    init_gpio();
+    init_accelerometer();
+
+
+    int i = 800000;
+    set_led(CYAN);
+	while(i--)
+	{};
+	set_led(OFF);
+
+    while(1)
+    {
+//    	if(calculate_accelerometer_tilt(NUM_OF_SAMPLES_PER_READING, THRESHOLD_FOR_TILT))
+//    	{
+//    		set_led(YELLOW);
+//    	}
+//    	else
+//    	{
+//    		set_led(OFF);
+//    	}
+    	__asm volatile ("nop");
     }
+
+
     return 0 ;
 }
