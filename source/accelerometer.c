@@ -34,13 +34,14 @@
  -------------------------------------------------------------------------------------------------------*/
 void init_accelerometer()
 {
-	uint8_t data = 0;
-	i2c_read(MMA_ADDR, REG_WHO_AM_I, &data, sizeof(data));
-	if(data != WHO_AM_I_DEVICE_ID)
-	{
-		set_led(RED);//set RED LED as an error
-		return;
-	}
+	//include this in test mode
+//	uint8_t data = 0;
+//	i2c_read(MMA_ADDR, REG_WHO_AM_I, &data, sizeof(data));
+//	if(data != WHO_AM_I_DEVICE_ID)
+//	{
+//		set_led(RED);//set RED LED as an error
+//		return;
+//	}
 
 
 	data = 0x00;	//REG_CTRL1 : setting standby mode
@@ -53,7 +54,7 @@ void init_accelerometer()
 
 
 	data = 0x03;	//REG_CTRL1 : setting active mode, 8 bit samples and 800 Hz ODR (Output data rate)
-//	i2c_write(MMA_ADDR, REG_CTRL1, &data,  1);
+	i2c_write(MMA_ADDR, REG_CTRL1, &data,  1);
 
 	//	data = 0x01;	//REG_CTRL1 : setting active mode, 14 bit samples and 800 Hz ODR (Output data rate)
 //	i2c_write(MMA_ADDR, REG_CTRL1, &data,  1);
@@ -171,7 +172,8 @@ int8_t read_accelerometer_orientation(int8_t* accel)
 //	LOG("\r\n");
 }
 
-
+static bool reference_set = false;
+static int8_t ref_accel_orientation[3];
 /*------------------------------------------------------------------------------------------------------
  * @brief :This function calculates tilt (dynamic)
  * (refer accelerometer.h for more details)
@@ -179,23 +181,28 @@ int8_t read_accelerometer_orientation(int8_t* accel)
 bool calculate_accelerometer_tilt(int8_t num_of_samples_per_reading, int8_t tilt_threshold)
 {
 	int8_t accel_orientation[3];
-	int8_t ref_accel_orientation[3];
+//	static int8_t ref_accel_orientation[3];
 	uint8_t trust_percentage_for_readings = 80;
-	static bool reference_set = false;
+
 	int8_t tilt_status_and_count = 0;
-	int d = 400000;
+	volatile int d = 4000;
 	int16_t temp_ref[3] = {0};
+
+	if(reference_set == false)
+	{
+		return 0;
+	}
 
 	for(int i = 0; i < num_of_samples_per_reading; i++)
 	{
 		read_accelerometer_orientation(accel_orientation);
-		if(reference_set == true)
+		//if(reference_set == true)
 		{
-////			LOG("abs val accelX = %d, accelY = %d, accelZ = %d 	 ", (accel_orientation[0]), (accel_orientation[1]), (accel_orientation[2]));
-////			LOG("tilt : accelX = %d, accelY = %d, accelZ = %d\r\n", \
-//					(accel_orientation[0]-ref_accel_orientation[0]), \
-//					(accel_orientation[1]-ref_accel_orientation[1]), \
-//					(accel_orientation[2]-ref_accel_orientation[2]));
+//			LOG("abs val accelX = %d, accelY = %d, accelZ = %d 	 ", (accel_orientation[0]), (accel_orientation[1]), (accel_orientation[2]));
+//			LOG("tilt : accelX = %d, accelY = %d, accelZ = %d\r\n", \
+					(accel_orientation[0]-ref_accel_orientation[0]), \
+					(accel_orientation[1]-ref_accel_orientation[1]), \
+					(accel_orientation[2]-ref_accel_orientation[2]));
 
 			if(((ABS(ref_accel_orientation[0] - accel_orientation[0]) > tilt_threshold))
 				|| ((ABS(ref_accel_orientation[1] - accel_orientation[1]) > tilt_threshold))
@@ -211,26 +218,10 @@ bool calculate_accelerometer_tilt(int8_t num_of_samples_per_reading, int8_t tilt
 			}
 
 		}
-		else	//reference orientation not set
-		{
-//			ref_accel_orientation[0] = accel_orientation[0];
-//			ref_accel_orientation[1] = accel_orientation[1];
-//			ref_accel_orientation[2] = accel_orientation[2];
-			temp_ref[0] += accel_orientation[0];
-			temp_ref[1] += accel_orientation[1];
-			temp_ref[2] += accel_orientation[2];
-			if(i == (num_of_samples_per_reading-1))
-			{
-				ref_accel_orientation[0] = temp_ref[0] / num_of_samples_per_reading;
-				ref_accel_orientation[1] = temp_ref[1] / num_of_samples_per_reading;
-				ref_accel_orientation[2] = temp_ref[2] / num_of_samples_per_reading;
-				reference_set = true;
-			}
-		}
 
 		while(d--)
-	    	{};
-	   	d = 40000;
+	    	{__asm volatile ("nop");};
+	   	d = 4000;
 	}
 
 
@@ -240,6 +231,51 @@ bool calculate_accelerometer_tilt(int8_t num_of_samples_per_reading, int8_t tilt
 		return true;
 	else if(tilt_status_and_count <= -(num_of_samples_per_reading * trust_percentage_for_readings)/100)
 		return false;
+
+
+	return 0;
+}
+
+/*------------------------------------------------------------------------------------------------------
+ * @brief :This function calculates reference position of accelerometer
+ * (refer accelerometer.h for more details)
+ ------------------------------------------------------------------------------------------------------*/
+int8_t calc_ref_accelerometer(int8_t num_of_samples_per_reading, int8_t tilt_threshold)
+{
+	int8_t accel_orientation[3];
+
+	uint8_t trust_percentage_for_readings = 80;
+	int8_t tilt_status_and_count = 0;
+	volatile int d = 4000;
+	int16_t temp_ref[3] = {0};
+
+	if(reference_set == true)
+	{
+		return -1;
+	}
+	for(int i = 0; i < num_of_samples_per_reading; i++)
+		{
+			read_accelerometer_orientation(accel_orientation);
+
+
+	//			ref_accel_orientation[0] = accel_orientation[0];
+	//			ref_accel_orientation[1] = accel_orientation[1];
+	//			ref_accel_orientation[2] = accel_orientation[2];
+				temp_ref[0] += accel_orientation[0];
+				temp_ref[1] += accel_orientation[1];
+				temp_ref[2] += accel_orientation[2];
+				if(i == (num_of_samples_per_reading-1))
+				{
+					ref_accel_orientation[0] = temp_ref[0] / num_of_samples_per_reading;
+					ref_accel_orientation[1] = temp_ref[1] / num_of_samples_per_reading;
+					ref_accel_orientation[2] = temp_ref[2] / num_of_samples_per_reading;
+					reference_set = true;
+				}
+
+			while(d--)
+				{__asm volatile ("nop");};
+			d = 4000;
+		}
 
 
 	return 0;

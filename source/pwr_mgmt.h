@@ -1,57 +1,55 @@
 /******************************************************************************************************
- * @file accelerometer.h :
- * @brief    : This file contains defines includes and funnction prototypes for accelerometer.c
+ * @file pwr_mgmt.h :
+ * @brief    : This file contains defines includes and function prototypes for pwr_mgmt.c
  *
  * @author 	 : Rajat Chaple (rajat.chaple@colorado.edu)
- * @date 	 : Apr 25, 2021
+ * @date 	 : May 1, 2021
  *
  * @resource :
  *******************************************************************************************************/
-#ifndef ACCELEROMETER_H_
-#define ACCELEROMETER_H_
+#ifndef PWR_MGMT_H_
+#define PWR_MGMT_H_
 
 /*---------------Includes-------------*/
-#include "stdint.h"
+
 /*---------------Defines--------------*/
-#define THRESHOLD_FOR_TILT			(40)	//mg
-#define NUM_OF_SAMPLES_PER_READING	(16)
 
 /*-------------- Datatypes-------------*/
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function initializes accelerometer with required configuration.
+ * @brief :This function 
  *
- * @param : none
+ * @param : 
  *
- * @return : none
+ * @return : 
  ------------------------------------------------------------------------------------------------------*/
-void init_accelerometer(void);
+void init_pwr_mgmt(void);
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function reads orientation(static)
+ * @brief :This function 
  *
- * @param : none
+ * @param : 
  *
- * @return : returns 0 if read data is valid else -1
+ * @return : 
  ------------------------------------------------------------------------------------------------------*/
-int8_t read_accelerometer_orientation(int8_t*);
+void run_to_lls_pwr_mode(void);
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function calculates tilt (dynamic)
+ * @brief :This function
  *
- * @param : none
+ * @param :
  *
- * @return : returns true if tilt
+ * @return :
  ------------------------------------------------------------------------------------------------------*/
-bool calculate_accelerometer_tilt(int8_t num_of_samples_per_reading, int8_t tilt_threshold);
+bool is_wakeup_for_indication(void);
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function calculates reference orientation . To be used for comparison later on.
+ * @brief :This function
  *
- * @param : none
+ * @param :
  *
- * @return : returns true if tilt
+ * @return :
  ------------------------------------------------------------------------------------------------------*/
-int8_t calc_ref_accelerometer(int8_t num_of_samples_per_reading, int8_t tilt_threshold);
+bool is_wakeup_for_tilt_measurement(void);
 
-#endif /* ACCELEROMETER_H_ */
+#endif /* PWR_MGMT_H_ */
