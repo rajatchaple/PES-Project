@@ -1,13 +1,13 @@
 # Getting in Tune (Assignment 7)
 
-This project is generating musical tones 440 Hz (an A4); 587 Hz (a D5); 659 Hz (an E5); and 880 Hz (an A5) on KL25Z.
+In this project, the developed device is targeted to sense condition of goods while transporting, which is its orientation. Also, Since this device needs to be standalone product and portable, it is required to be battery operated. This requires low power operation of device.
 
 This project contains following implementations:
 
-1. Configuring DAC (Sampling Rate: 48 KHz, Resolution: 12 bits per sample)
-2. Configuring DMA
-3. Configuring ADC (Sampling Rate: 96 KHz, Resolution: 16 bits per sample)
-4. GPIO configuration from previous project
+1. Accelerometer interface over I2C
+2. LPTIMER (low power timer)
+3. Deep sleep into low leakage stop
+   
 
 
 ## Getting Started
@@ -21,16 +21,25 @@ MCUXpresso 11.2 is used for this project. Import this project in MCUXpresso by c
 
 ## Running the tests
 Run or Debug Configuration can be used to run this project. 
-1. Debug configuration prints debug data over serial emulator.
-2. Run configuration is a release configuration and is same as production release
+Tests are manual as almost every function call is someway or the other connected to external hardware.
+# TEST 1 : Software integration and Hardware test
+Testing sequence as below:
+1) Press and hold TEST_SWITCH (pin details in gpio_pins.h) followed by reset
+2) This will enter device into Test Mode also ensured by External LED 1. (pin details in gpio.h)
+3) Firstly it checks all LEDs
+   sequence : RED, GREEN, BLUE, EXTERNAL_OFF, EXTERNAL_ON
+4) It then calibrates accelerometer into current device's pose
+5) Device needs to be tilted for angle greater than ~40 degrees in any direction. Tilt is indicated by CYAN led. Perform for mulriple angles.
+6) Device remains in test mode. TO returnd device into App mode, reset device without pressing TEST_SWITCH
 
-## Tones
-Following is an image to showing different tones generated using fixed point sin function.
-![Tones](screenshots/tones.JPG)
-Data points were copied into excel sheet and waveform was plotted.
+# TEST 2 : Energy profiling for low power mode
+1) Simplicity studio and Blue geckos AEM was used for energy measurement
+2) KL25Z acted as a peripheral device
 
-## Extra Credit
-ADC calibration implemented
+Since on average this device uses current of 49uA. Estimated battery life for device is 7 days for 2400mAh
+
+
+
 
 
 ## Built With
