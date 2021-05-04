@@ -1,4 +1,4 @@
-# Getting in Tune (Assignment 7)
+# Goods Sense device (Final Project)
 
 This project is generating musical tones 440 Hz (an A4); 587 Hz (a D5); 659 Hz (an E5); and 880 Hz (an A5) on KL25Z.
 
