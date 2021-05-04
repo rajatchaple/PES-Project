@@ -1,4 +1,4 @@
-# Getting in Tune (Assignment 7)
+# Goods Sense device (Final Project)
 
 In this project, the developed device is targeted to sense condition of goods while transporting, which is its orientation. Also, Since this device needs to be standalone product and portable, it is required to be battery operated. This requires low power operation of device.
 
