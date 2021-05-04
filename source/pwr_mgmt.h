@@ -11,45 +11,39 @@
 #define PWR_MGMT_H_
 
 /*---------------Includes-------------*/
+#include <stdbool.h>
 
 /*---------------Defines--------------*/
-
+typedef enum allowed_wakeup_source{
+	WU_EXT_PIN_PTD4_FILT = 0x01,
+	WU_LPTIMER0 = 0x02
+}allowed_wakeup_source_t;
 /*-------------- Datatypes-------------*/
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function 
- *
- * @param : 
- *
- * @return : 
+ * @brief :This function initializes pwr management module
+ * @param : none
+ * @return : none
  ------------------------------------------------------------------------------------------------------*/
 void init_pwr_mgmt(void);
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function 
+ * @brief :This function enters system from RUN mode to LLS mode
  *
- * @param : 
+ * @param : wakeup source : allowed to get back into RUN mode
  *
- * @return : 
+ * @return : none
  ------------------------------------------------------------------------------------------------------*/
-void run_to_lls_pwr_mode(void);
+void deep_sleep_lls(allowed_wakeup_source_t);
+
 
 /*------------------------------------------------------------------------------------------------------
- * @brief :This function
+ * @brief :This function tells whether wakeup caused is for system accelerometer calibration
  *
- * @param :
+ * @param : none
  *
- * @return :
+ * @return : returns true if wakeup caused
  ------------------------------------------------------------------------------------------------------*/
-bool is_wakeup_for_indication(void);
-
-/*------------------------------------------------------------------------------------------------------
- * @brief :This function
- *
- * @param :
- *
- * @return :
- ------------------------------------------------------------------------------------------------------*/
-bool is_wakeup_for_tilt_measurement(void);
+bool is_wakeup_for_calibration(void);
 
 #endif /* PWR_MGMT_H_ */

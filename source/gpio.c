@@ -8,8 +8,10 @@
  ****************************************************************************************/
 
 /*---------Includes-----------*/
+#include <stdbool.h>
 #include "gpio.h"
 #include "gpio_pins.h"
+#include "timers.h"
 
 /*----------------------------------------------------------------------------
  * Initializes pins to Inputs and outputs as defined in init_gpio.h
@@ -45,18 +47,6 @@
 			 gpio_pins[i].gpio->PCOR |= MASK(gpio_pins[i].pin);
 		 }
 
-		 //Set Gpio direction as Input or Output
-		 if(gpio_pins[i].direction == output)
-		 {
-			 //setting relevant bit to set pin as output
-			 gpio_pins[i].gpio->PDDR |= MASK(gpio_pins[i].pin);
-		 }
-		 else if(gpio_pins[i].direction == input)
-		 {
-			 //clearing relevant bit to set pin as output
-			 gpio_pins[i].gpio->PDDR &= (uint32_t)(~MASK(gpio_pins[i].pin));
-		 }
-
 
 		 //If pin is to be set up as Input, set up its pull up / down configuration
 		 if((gpio_pins[i].direction == input) && (gpio_pins[i].pull_control != NA))
@@ -74,6 +64,19 @@
 			 }
 		 }
 
+		 //Set Gpio direction as Input or Output
+		 if(gpio_pins[i].direction == output)
+		 {
+			 //setting relevant bit to set pin as output
+			 gpio_pins[i].gpio->PDDR |= MASK(gpio_pins[i].pin);
+		 }
+		 else if(gpio_pins[i].direction == input)
+		 {
+			 //clearing relevant bit to set pin as input
+			 gpio_pins[i].gpio->PDDR &= (uint32_t)(~MASK(gpio_pins[i].pin));
+		 }
+
+
 	 }
 
  }
@@ -84,33 +87,66 @@
  ----------------------------------------------------------------------------*/
 void set_led(led_color_t color)
 {
-	if(color & 0b001)	//Checking if Blue LED needs to be turned or
+	if(color == YELLOW_EXTERNAL_LED1)	//for external LED1 yellow
 	{
-		GPIOD->PCOR |= MASK(BLUE_LED_PIN);	//Turns Blue LED on
+		GPIOA->PSOR |= MASK(YELLOW_LED_PIN);	//Turns external Yellow LED on
 	}
-	else
+	else if(color == OFF_EXTERNAL_LED1)
 	{
-		GPIOD->PSOR |= MASK(BLUE_LED_PIN);	//Turns Blue LED off
+		GPIOA->PCOR |= MASK(YELLOW_LED_PIN);	//Turns external Yellow LED off
+	}
+	else	//for onboard tricolor LED
+	{
+		if(color & 0b001)	//Checking if Blue LED needs to be turned or
+		{
+			GPIOD->PCOR |= MASK(BLUE_LED_PIN);	//Turns Blue LED on
+		}
+		else
+		{
+			GPIOD->PSOR |= MASK(BLUE_LED_PIN);	//Turns Blue LED off
+		}
+
+		if(color & 0b010)	//Checking if Green LED needs to be turned or
+		{
+			GPIOB->PCOR |= MASK(GREEN_LED_PIN);	//Turns Green LED on
+		}
+		else
+		{
+			GPIOB->PSOR |= MASK(GREEN_LED_PIN);	//Turns Green LED off
+		}
+
+		if(color & 0b100)	//Checking if Red LED needs to be turned or
+		{
+			GPIOB->PCOR |= MASK(RED_LED_PIN);	//Turns Red LED on
+		}
+		else
+		{
+			GPIOB->PSOR |= MASK(RED_LED_PIN);	//Turns Red LED off
+		}
 	}
 
-	if(color & 0b010)	//Checking if Green LED needs to be turned or
-	{
-		GPIOB->PCOR |= MASK(GREEN_LED_PIN);	//Turns Green LED on
-	}
-	else
-	{
-		GPIOB->PSOR |= MASK(GREEN_LED_PIN);	//Turns Green LED off
-	}
+}
 
-	if(color & 0b100)	//Checking if Red LED needs to be turned or
+/*----------------------------------------------------------------------------
+ * Executes LED_sequence defined in gpio.h
+ * (refer gpio.h for more details)
+ ----------------------------------------------------------------------------*/
+void led_blink_pattern(led_pattern_t* pattern, uint8_t iterations)
+{
+	for(int i=0; i<iterations; i++)
 	{
-		GPIOB->PCOR |= MASK(RED_LED_PIN);	//Turns Red LED on
+		set_led(pattern[i].color);
+		delay(pattern[i].delay);
 	}
-	else
-	{
-		GPIOB->PSOR |= MASK(RED_LED_PIN);	//Turns Red LED off
-	}
+}
 
+/*----------------------------------------------------------------------------
+ * Returns test switch status
+ * (refer gpio.h for more details)
+ ----------------------------------------------------------------------------*/
+bool read_test_switch()
+{
+	return(!(GPIOA->PDIR & MASK(TEST_SWITCH)));	//Active low switch
 }
 
 /*----------------------------------------------------------------------------
@@ -145,5 +181,18 @@ void gpio_clock_enable()
 			 }
 	 }
 
+}
+
+/*----------------------------------------------------------------------------
+ * Enable clocks for ports defined in gpio_pins.h
+ * (refer gpio.h for more details)
+ ----------------------------------------------------------------------------*/
+void gpio_clock_disable()
+{
+				 SIM->SCGC5 &= ~SIM_SCGC5_PORTA_MASK;
+				 SIM->SCGC5 &= ~SIM_SCGC5_PORTB_MASK;
+				 SIM->SCGC5 &= ~SIM_SCGC5_PORTC_MASK;
+				 SIM->SCGC5 &= ~SIM_SCGC5_PORTD_MASK;
+				 SIM->SCGC5 &= ~SIM_SCGC5_PORTE_MASK;
 }
 

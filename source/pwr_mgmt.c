@@ -1,6 +1,6 @@
 /*******************************************************************************************************
  * @file pwr_mgmt.c :
- * @brief   : This file contains 
+ * @brief   : This file contains power management modules,i.e., sleep and wakeup routines
  * 
  * @author  : Rajat Chaple (rajat.chaple@colorado.edu)
  * @date    : May 1, 2021
@@ -13,93 +13,71 @@
 #include "MKL25Z4.h"
 #include "gpio.h"
 #include "timers.h"
-#include "i2c.h"
-
-/*--------------Defines-------------*/
+#include "pwr_mgmt.h"
 
 /*------------- Datatypes-----------*/
 
-
-static bool timed_wakeup_for_indication = false;
-static uint16_t timer_for_tilt_measurement = 0;
+static bool wakeup_for_calibration = false;
 /*-------------------------------------------------------------------------------------------------------
  * This function initializes power management_module
  * (refer pwr_mgmt.h for more details)
  -------------------------------------------------------------------------------------------------------*/
 void init_pwr_mgmt()
 {
-#if 1
-//	SMC->PMPROT |= SMC_PMPROT_ALLS_MASK;
+	SMC->PMPROT = SMC_PMPROT_ALLS_MASK;	//allow deep sleep upto Low leakage stop
 
-
-	//Enablig module for LLWU
-	LLWU->ME |= LLWU_ME_WUME0_MASK;	//using LPTMR0 as LLWU
+	//selecting LLS mode
+	SMC->PMCTRL &= ~SMC_PMCTRL_STOPM_MASK;
+	SMC->PMCTRL |= SMC_PMCTRL_STOPM(3);
 
 	//Enabling interrupt in NVIC
-//	NVIC_SetPriority(LLWU_IRQn, 2);
-//	NVIC_ClearPendingIRQ(LLWU_IRQn);
+	NVIC_SetPriority(LLWU_IRQn, 2);
+	NVIC_ClearPendingIRQ(LLWU_IRQn);
 	NVIC_EnableIRQ(LLWU_IRQn);
-#endif
 
-	//Enablig module for LLWU
-//		LLWU->ME |= LLWU_ME_WUME0_MASK;	//using LPTMR0 as LLWU
-
-
-//	    NVIC_EnableIRQ(LLW_IRQn);
-
-//	    volatile unsigned int dummyread;
-//
-//	      /* The PMPROT register allows the MCU to enter the LLS modes.*/
-//	      SMC->PMPROT = SMC_PMPROT_ALLS_MASK;
-//
-//	      /* Set the STOPM field to 0b011 for LLS mode */
-//	      SMC->PMCTRL &= ~SMC_PMCTRL_STOPM_MASK;
-//	      SMC->PMCTRL |=  SMC_PMCTRL_STOPM(0x3);
-//
-//	      /*wait for write to complete to SMC before stopping core */
-//	      dummyread = SMC->PMCTRL;
-//	      dummyread++;
-//
-//	      /* Set the SLEEPDEEP bit to enable deep sleep mode (STOP) */
-//	      SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-//
-//	      __WFI();
 }
 
 /*-------------------------------------------------------------------------------------------------------
  * This function
  * (refer pwr_mgmt.h for more details)
  -------------------------------------------------------------------------------------------------------*/
-void run_to_lls_pwr_mode()
+void deep_sleep_lls(allowed_wakeup_source_t allowed_wakeup_source)
 {
-	volatile unsigned int dummyread;
-	SMC->PMPROT = SMC_PMPROT_ALLS_MASK;	//allow deep sleep upto Low leakage stop
+	volatile unsigned int dummy;
 
-	//disabling accelerometer
-	uint8_t data = 0x00;
-		i2c_write(0x1D, 0x2A, &data,  1);
+	if(allowed_wakeup_source & WU_EXT_PIN_PTD4_FILT)
+	{
+		LLWU->PE4 &= ~LLWU_PE4_WUPE14_MASK;	//disabling PD4 as a wakeup pin (falling and rising edge)
+		LLWU->FILT1 &= ~LLWU_FILT1_FILTSEL_MASK;
+		LLWU->FILT1 |= LLWU_FILT1_FILTSEL(14);
+		LLWU->FILT1 |= LLWU_FILT1_FILTE(2);	//enabling on negative edge
 
-//	LPTMR0->CSR |= LPTMR_CSR_TCF_MASK;
-	//selecting LLS mode
-	SMC->PMCTRL &= ~SMC_PMCTRL_STOPM_MASK;
-	SMC->PMCTRL |= SMC_PMCTRL_STOPM(3);
+		LLWU->FILT1 |= LLWU_FILT1_FILTF_MASK;
+	}
+	else
+	{
+		LLWU->FILT1 &= ~LLWU_FILT1_FILTE_MASK; //Disabling digital filter
+	}
 
-	dummyread = SMC->PMCTRL;
-	dummyread++;
+	if(allowed_wakeup_source & WU_LPTIMER0)	//if wakeup source is LPTIMER
+	{
+		LLWU->ME |= LLWU_ME_WUME0_MASK;	//using LPTMR0 as LLWU
+		LPTMR0->CSR |= LPTMR_CSR_TCF_MASK;
+		LPTMR0->CSR |= LPTMR_CSR_TEN_MASK;
+	}
+	else
+	{
+		LPTMR0->CSR &= ~LPTMR_CSR_TEN_MASK;
+		LLWU->ME &= ~LLWU_ME_WUME0_MASK;	//using LPTMR0 as LLWU
+	}
 
-	LPTMR0->CSR |= LPTMR_CSR_TEN_MASK;
-
-//	SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk; //
 	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;	//deep sleep
-	dummyread = SMC->PMCTRL;
-		dummyread++;
-		dummyread = SMC->PMCTRL;
+	dummy = SMC->PMCTRL;	//dummy read helps executing instruction prior to going in deep sleep
+
 	__WFI();
 
-	dummyread = SMC->PMCTRL;
-
-	dummyread = SMC->PMCTRL;
-	dummyread = SMC->PMCTRL;
+	dummy = SMC->PMCTRL;
+	(void)dummy;	//for removing unused warning
 }
 
 /*-------------------------------------------------------------------------------------------------------
@@ -108,55 +86,36 @@ void run_to_lls_pwr_mode()
  -------------------------------------------------------------------------------------------------------*/
 void LLWU_IRQHandler()
 {
-	//clearing flag (for internal modules internal module's flag neads to be cleared)
-	LPTMR0->CSR &= ~LPTMR_CSR_TEN_MASK;  //disabling timer interrupt
-	LPTMR0->CSR |= LPTMR_CSR_TCF_MASK;
+	//checking if wake up caused by internal module LPTIMER0
+	if(LLWU->F3 & LLWU_F3_MWUF0_MASK)
+	{
+		//clearing flag (for internal modules internal module's flag neads to be cleared)
+		LPTMR0->CSR |= LPTMR_CSR_TCF_MASK;
+	}
 
-	timer_for_tilt_measurement += INDICATION_INTERVAL_MS;
-	timed_wakeup_for_indication = true;
+	//checking if wake up caused by calibration switch
+	if(LLWU->FILT1 & LLWU_FILT1_FILTF_MASK)
+	{
+		LLWU->FILT1 |= LLWU_FILT1_FILTF_MASK;
+		wakeup_for_calibration = true;
+	}
+
 }
 
 /*-------------------------------------------------------------------------------------------------------
- * This function returns system's status if it transitioned from lls (deep sleep) to run mode
+ * This function returns system's status if it transitioned from lls (deep sleep) to run mode for calibration
  * (refer pwr_mgmt.h for more details)
  -------------------------------------------------------------------------------------------------------*/
-bool is_wakeup_for_indication()
-{	//entering critical section as this variables value is read by external module
-	uint32_t mask_state = __get_PRIMASK();
-	__disable_irq();
-
-	bool ret = timed_wakeup_for_indication;
-	timed_wakeup_for_indication = false;
-
-	__set_PRIMASK(mask_state);
-	return ret;
-}
-
-/*-------------------------------------------------------------------------------------------------------
- * This function returns system's status if it transitioned from lls (deep sleep) to run mode
- * (refer pwr_mgmt.h for more details)
- -------------------------------------------------------------------------------------------------------*/
-bool is_wakeup_for_tilt_measurement()
-{	//entering critical section as this variables value is read by external module
-	bool ret = false;
-
+bool is_wakeup_for_calibration()
+{
 	//Entering critical section
 	uint32_t mask_state = __get_PRIMASK();
 	__disable_irq();
 
-	if(timer_for_tilt_measurement >= TILT_MEASUREMENT_INTERVAL)
-	{
-		timer_for_tilt_measurement = 0;
-		ret = true;
-	}
+	bool ret = wakeup_for_calibration;
+	wakeup_for_calibration = false;
 
 	__set_PRIMASK(mask_state);
 
-	//enabling accelerometer
-	uint8_t data = 0x03;	//REG_CTRL1 : setting active mode, 8 bit samples and 800 Hz ODR (Output data rate)
-	i2c_write(0x1D, 0x2A, &data,  1);
-
-
 	return ret;
 }
-

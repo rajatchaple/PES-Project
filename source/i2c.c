@@ -5,7 +5,7 @@
  * @author  : Rajat Chaple (rajat.chaple@colorado.edu)
  * @date    : Apr 25, 2021
  *
- * @resource: 
+ * @resource: THis file is written with the help of Alexander Dean's book
  *******************************************************************************************************/
 
 /*------------- Includes -----------*/
@@ -32,8 +32,6 @@
 
 
 
-/*------------- Datatypes-----------*/
-
 /*-------------------------------------------------------------------------------------------------------
  * This function initializes i2c module to communicate with onboard
  -------------------------------------------------------------------------------------------------------*/
@@ -50,8 +48,6 @@
      PORTE->PCR[25] |= PORT_PCR_MUX(5); //I2C0_SDA
 
     //setting up I2C in fast mode 400k baud
-    // baud = bus_freq/(scl_div + mul)
-    // 24MHz/ 400kHz = 60
     I2C0->F = I2C_F_ICR(0x11) | I2C_F_MULT(0);
 
     //enable I2C and set to master mode
@@ -60,100 +56,8 @@
     //select high drive mode    //TODO : check if this is really reqd.. power can be saved
     I2C0->C2 |= (I2C_C2_HDRS_MASK);
 
-
-
-     /* Connection details for accelerometer
-     *  INT1 ACCEL : PTA14 
-     *  INT2 ACCEL : PTA15 
-     *  I2C0_SCL : PTE24
-     *  I2C0_SDA : PTE25 *
-     *  => device address is 0011101 (0x1D) as SA0 is high
-     *  => I2C0_C1 control register
-     *  •IICEN enables the peripheral to operate.
-        •IICIE enables interrupts from the peripheral.
-        •MST sets master or slave mode and also generates start and stop conditions on the bus. Changing MST from zero to one generates a start and selects master mode. Changing MST from one to zero generates a stop and selects slave mode.
-        •TX selects if the peripheral will transmit (one) or receive (zero).
-        •TXAK controls whether to transmit an ACK (zero) or a NACK (one) after a byte is received.
-        •Writing a one to RSTA makes the peripheral generate a repeated start condition on the bus.
-        •DMAEN enables DMA transfers.
-
-        => I2C0_S status and interrupts register
-        •TCF indicates that a byte and acknowledgment bit transfer has completed.
-        •BUSY indicates the bus is busy.
-        •IICIF indicates that an interrupt is pending, for example, because a transfer has completed.
-        •RXAK indicates that an acknowledgment bit was received (one) after transmitting a byte. A zero indicates no acknowledgment was received.
-
-        => I2C0_D data register holds data to transmit or receive
-
-        => I2C0_F registers configures baud rate
-        I2C baud rate = bus speed / mul*scl divider
-
-        => feature to be used : lopw-power mode that can operate while the rest of the MCU is in sleep mode.
-     */
-
  }
 
-#ifndef MULTIPLE_BYTES
-/*-------------------------------------------------------------------------------------------------------
- * This function writes a byte of data over I2C
- * (refer i2c.h for more details)
- -------------------------------------------------------------------------------------------------------*/
-void i2c_write_byte(uint8_t device_address, uint8_t reg, uint8_t data)
-{
-    uint8_t device_address_with_write = (device_address << 1) & 0xFE;
-
-    I2C_TRANS;                              //set to transmit mode
-    I2C_M_START;                            //send start
-    I2C0->D = device_address_with_write;    //send dev address (write)
-    I2C_WAIT                                //wait for ack
-    
-    I2C0->D = reg;                          //send register address
-    I2C_WAIT                                //wait for completion
-
-    I2C0->D = data;                         //send data
-    I2C_WAIT                                //wait for completion
-    I2C_M_STOP;                             //send stop
-
-    while(I2C0->S & I2C_S_BUSY_MASK){};
-}
-
- /*-------------------------------------------------------------------------------------------------------
- * This function reads a byte of data over I2C
- * (refer i2c.h for more details)
- -------------------------------------------------------------------------------------------------------*/
-uint8_t i2c_read_byte(uint8_t device_address, uint8_t reg)
-{
-    uint8_t device_address_with_write = (device_address << 1) & 0xFE;
-    uint8_t device_address_with_read = (device_address << 1) | 0x01;
-    uint8_t data;
-
-    I2C_TRANS;                              //set to transmit mode
-    I2C_M_START;                            //send start
-    I2C0->D = device_address_with_write;    //send dev address (write)
-    I2C_WAIT                                //wait for completion
-    
-    I2C_DATA(reg);                          //send register address
-    I2C_WAIT                                //wait for completion
-
-    I2C_M_RSTART;                           //repeated start
-    I2C0->D = device_address_with_read;     //send dev address (read)
-    I2C_WAIT                                //wait for completion
-
-    I2C_REC;                                //set to receive mode
-    NACK;                                   //set NACK after read
-
-    data = I2C0->D;                         //dummy read
-    I2C_WAIT                                //wait for completion
-
-    I2C_M_STOP;                             //send stop
-    data = I2C0->D;                         //read data
-
-    while(I2C0->S & I2C_S_BUSY_MASK){};
-
-    return data;
-}
- 
-#else
 
 /*-------------------------------------------------------------------------------------------------------
  * This function writes a byte of data over I2C
@@ -241,10 +145,10 @@ uint8_t i2c_read(uint8_t device_address, uint8_t reg, uint8_t* data, uint8_t dat
         I2C_WAIT
         I2C_M_STOP;
     }
+    (void)dummy;	//for removing unused warning
         
     while(I2C0->S & I2C_S_BUSY_MASK){};
 
     return num_of_bytes_read;
 }
 
-#endif

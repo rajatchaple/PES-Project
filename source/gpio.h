@@ -16,18 +16,21 @@
 
 /*---------------Defines--------------*/
 #define MASK(x)			(1<<x)
-
-
+#define NUM_BLINKS(x) (sizeof(x) / sizeof((x)[0]))
 /*--------------- Datatypes-------------*/
 typedef enum led_color{
-	OFF,	//000
-	BLUE,	//001
-	GREEN,	//010
-	CYAN,	//011 -> GREEN+BLUE
-	RED,	//100
-	MAGENTA,//101 -> RED+BLUE
-	YELLOW,	//110
-	WHITE	//111 -> WHITE
+	//For onboard internal tricolor LED
+	OFF_ONBOARD_TRICOLOR,	//000
+	BLUE,					//001
+	GREEN,					//010
+	CYAN,					//011 -> GREEN+BLUE
+	RED,					//100
+	MAGENTA,				//101 -> RED+BLUE
+	YELLOW,					//110
+	WHITE,					//111 -> WHITE
+	//For external LEDs
+	OFF_EXTERNAL_LED1,		//1000
+	YELLOW_EXTERNAL_LED1	//1001
 }led_color_t;
 
 typedef enum pull_control_s{
@@ -57,6 +60,11 @@ typedef struct gpio_pin_definition_s{
 	logic_t logic;
 }gpio_pin_definition_t;
 
+typedef struct led_pattern_t{
+	led_color_t color;
+	uint32_t delay;
+}led_pattern_t;
+
 
 /*---------------Function prototypes-------------*/
 /*------------------------------------------------------------------------------------
@@ -85,4 +93,7 @@ void set_led(led_color_t);
  * Returns: None
  ------------------------------------------------------------------------------------- */
 void gpio_clock_enable(void);
+void gpio_clock_disable(void);
+bool read_test_switch(void);
+void led_blink_pattern(led_pattern_t*, uint8_t iterations);
 #endif /* GPIO_H_ */
