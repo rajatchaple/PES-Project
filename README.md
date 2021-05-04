@@ -19,10 +19,12 @@ For this project, you would require MCUXpresso installed on your PC. You can use
 ### Installing
 MCUXpresso 11.2 is used for this project. Import this project in MCUXpresso by clicking on File->Import->Existing Project.
 
-## Running the tests
-Run or Debug Configuration can be used to run this project. 
+# Working of the project is explained using video 
+[Project : Goods Sense Device](https://drive.google.com/drive/u/1/folders/1d4eFzu7haaYxXG7Dq25bmqxyeXCQLaHN)
+
+# Running the tests
 Tests are manual as almost every function call is someway or the other connected to external hardware.
-# TEST 1 : Software integration and Hardware test
+## TEST 1 : Software integration and Hardware test
 Testing sequence as below:
 1) Press and hold TEST_SWITCH (pin details in gpio_pins.h) followed by reset
 2) This will enter device into Test Mode also ensured by External LED 1. (pin details in gpio.h)
@@ -32,12 +34,13 @@ Testing sequence as below:
 5) Device needs to be tilted for angle greater than ~40 degrees in any direction. Tilt is indicated by CYAN led. Perform for mulriple angles.
 6) Device remains in test mode. TO returnd device into App mode, reset device without pressing TEST_SWITCH
 
-# TEST 2 : Energy profiling for low power mode
+## TEST 2 : Energy profiling for low power mode
 1) Simplicity studio and Blue geckos AEM was used for energy measurement
 2) KL25Z acted as a peripheral device
 
 Since on average this device uses current of 49uA. Estimated battery life for device is 7 days for 2400mAh
 
+details of the energy profiler are explained in proect video
 
 
 
