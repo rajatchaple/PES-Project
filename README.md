@@ -55,8 +55,6 @@ arm-none-eabi-gcc compiler
 ## Acknowledgments
 Code development was done with the help of Dean's book and KL25 reference manual.
 
-Saket Penurkar helped me resolving couple of critical bugs.
-
 Readme.md was written using template at
 https://gist.github.com/PurpleBooth/109311bb0361f32d87a2
 
